@@ -1,34 +1,83 @@
 
+# PREPARE SESSION ---------------------------------------------------------
+# Set directory ?
+# Librairies ?
+
+
 # PATH ---------------------------------------------------------------
-PATH_OCCURRENCE_TOT = "../Data/occurence_tot.csv"
-PATH_OCCURRENCE_BENTHIC = "../Data/occurence_benthic.csv"
-PATH_OCCURRENCE_PELAGIC = "../Data/occurence_pelagic.csv"
+PATH_SPE = "../Data/occurence_tot.csv"
+PATH_SPE_BENTHIC = "../Data/occurence_benthic.csv"
+PATH_SPE_PELAGIC = "../Data/occurence_pelagic.csv"
 PATH_ENV = "../Data/env.csv"
+
 # Load data ---------------------------------------------------------------
+  # Environmental parameters
+  env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
+  env <- env[2205:2214]   # Keep only environmental parameters
+  env 
+  
+  #speurrences
+  
+    # Total
+    spe <- read.csv(PATH_SPE, sep = ',', row.names = NULL)
+    name_species <- spe[,2:11]
+    spe <- spe[,-(0:11)]
+    site_names <- colnames(spe[,-1], prefix = "")
+    colnames(spe) <- append(1:56, "Tot", 0) # Pourquoi ?
+  
+    # Pelagic
+    spe.pel <- read.csv(PATH_SPE_PELAGIC, sep = ',', quote = "", row.names = NULL); 
+    spe.pel <- spe.pel[,-(0:11)];
+    colnames(spe.pel) <- append(1:56, "Tot", 0);
+  
+    # Benthic
+    spe.ben <- read.csv(PATH_SPE_BENTHIC, sep = ',', quote = "", row.names = NULL) 
+    spe.ben <- spe.ben[,-(0:11)]
+    colnames(spe.ben) <- append(1:56, "Tot", 0)
+  
+# Data exploration ENV  ---------------------------------------------------------------
+    # Summary 
+      summary(env)
+      str(env) # asfactor pour N/Y sediment ?
+      
+    # Map sites (TODO : Improve)
+      coo = env[,(1:2)]
+      plot(coo, 
+           asp = 1, 
+           type = "p", 
+           main = "Site Locations", 
+           xlab = "° longitude", 
+           ylab = "° latitude",
+           xlim = c(-90,90),
+           ylim = c(-90,90),
+      )
+    
+# Data exploration SPE  ---------------------------------------------------------------
+    
+    # Summary
+      summary(spe)
+      str(spe)
+  
+    # Proportion of zeros in the community data set
+      sum(spe == 0) / (nrow(spe) * ncol(spe))
+      
+    # relative presence of each species
+            
+        # total presence for each species
+          spe.pres <- apply(spe > 0, 1, sum)
+          sites.pres <- apply(spe > 0, 2, sum)
+        # Sort the results in increasing order
+          sort(spe.pres)
+        
+        # Plot histograms
+        barplot(sites.pres[-(1)], 
+               las = 1,
+               xlab = "Sites",
+               ylab = "Species richness",
+               col = gray(5 : 0 / 5),
+               horiz=F,
+       )
+         
 
-#Environmental parameters
-env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
-env <- env[2205:2214]
-env
-#Occurrences
-occ.tot <- read.csv(PATH_OCCURRENCE_TOT, sep = ',', row.names = NULL)
-name_species <- occ.tot[,2:11]
-occ.tot <- occ.tot[,-(0:11)]
-site_names <- colnames(occ.tot[,-1], prefix = "")
-colnames(occ.tot) <- append(1:56, "Tot", 0)
-
-
-occ.pel <- read.csv(PATH_OCCURRENCE_PELAGIC, sep = ',', quote = "", row.names = NULL) 
-occ.pel <- occ.pel[,-(0:11)]
-colnames(occ.pel) <- append(1:56, "Tot", 0)
-
-occ.ben <- read.csv(PATH_OCCURRENCE_BENTHIC, sep = ',', quote = "", row.names = NULL) 
-occ.ben <- occ.ben[,-(0:11)]
-colnames(occ.ben) <- append(1:56, "Tot", 0)
-
-
-env
-occ.tot
-occ.pel 
-occ.ben
-
+# Plot species on map ?? 
+            
