@@ -2,6 +2,9 @@
 # PREPARE SESSION ---------------------------------------------------------
 # Set directory ?
 # Librairies ?
+library(tidyverse)
+
+world_map = map_data("world")
 
 
 # PATH ---------------------------------------------------------------
@@ -38,20 +41,26 @@ PATH_ENV = "../Data/env.csv"
 # Data exploration ENV  ---------------------------------------------------------------
     # Summary 
       summary(env)
-      str(env) # asfactor pour N/Y sediment ?
+      str(env) # asfactor pour N/Y sediment ?  
       
     # Map sites (TODO : Improve)
       coo = env[,(1:2)]
-      plot(coo, 
-           asp = 1, 
-           type = "p", 
-           main = "Site Locations", 
-           xlab = "° longitude", 
-           ylab = "° latitude",
-           xlim = c(-90,90),
-           ylim = c(-90,90),
-      )
+      map <- ggplot(world_map, aes(x = long, y = lat, group = group))  +
+      geom_path()+
+      scale_y_continuous(breaks = (-2:2) * 30) +
+      scale_x_continuous(breaks = (-4:4) * 45) +
+      geom_point(data = coo, aes(x=Longitude..degrees., y=Latitide..degrees., size = sites.pres[-1],colour = "red"), inherit.aes = FALSE) +
+      xlab("° Longitude") + ylab("° Latitude") +
+         labs(colour ='Sites of study',size = "Number of occurrences" , title = "Location of sites")
+map 
     
+#asp = 1, 
+#type = "p", 
+#main = "Site Locations", 
+#xlab = "° longitude", 
+#
+#ylim = c(-90,90),
+#xlim = c(-180,180),
 # Data exploration SPE  ---------------------------------------------------------------
     
     # Summary
