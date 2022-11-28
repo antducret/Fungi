@@ -3,7 +3,8 @@
 
 # Set directory ?
 # Librairies ?
-setwd(dir = "/home/filsdufrere/Documents/Multivariate Statistics in R/datasets_fungi/Fungi/Projet_Rstudio")
+#setwd(dir = "/home/filsdufrere/Documents/Multivariate Statistics in R/datasets_fungi/Fungi/Projet_Rstudio")
+setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
 library(tidyverse)
 
 world_map = map_data("world")
@@ -16,34 +17,23 @@ PATH_SPE_PELAGIC = "../Data/occurence_pelagic.csv"
 PATH_ENV = "../Data/env.csv"
 
 # Load data ---------------------------------------------------------------
-  # Environmental parameters
-  env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
-  env <- env[2205:2214]   # Keep only environmental parameters
-  env 
+  # ENV
+    env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
+    env <- env[2205:2214]   # Keep only environmental parameters
+    env$sediment <- as.factor(env$sediment)
+    env 
   
-  #speurrences
-  
-    # Total
+  # SPE
     spe <- read.csv(PATH_SPE, sep = ',', row.names = NULL)
     name_species <- spe[,2:11]
     
     spe <- spe[spe$Class != '',]
     spe$Class <- as.factor(spe$Class)
+    
     spe <- aggregate(spe[,-(0:11)], by = list(spe$Class), FUN = "sum")
     site_names <- colnames(spe[,-1], prefix = "")
-    namecol <- append(1:56, "Tot", 0)
-    colnames(spe) <- append(namecol, "Class", 0) # Pourquoi ?
-    
-    head(spe)
-    
+    colnames(spe) <- append(1:56, c("Class","Tot"), 0)
 
-#asp = 1, 
-#type = "p", 
-#main = "Site Locations", 
-#xlab = "° longitude", 
-#
-#ylim = c(-90,90),
-#xlim = c(-180,180),
 # Data exploration SPE  ---------------------------------------------------------------
     
     # Summary
@@ -69,7 +59,8 @@ PATH_ENV = "../Data/env.csv"
                col = gray(5 : 0 / 5),
                horiz=F,
        )
-        # Data exploration ENV  ---------------------------------------------------------------
+        
+# Data exploration ENV  ---------------------------------------------------------------
         # Summary 
         summary(env)
         str(env) # asfactor pour N/Y sediment ?  
@@ -88,58 +79,49 @@ PATH_ENV = "../Data/env.csv"
          
 
 #Supervised classification
-    #Classification trees, Random Forest 
-    # Hierarchical (dendrograms) or not (k-means)
-
-spe.norm = decostand(spe[,2:58], 'normalize')
-
-spe.hel  = vegdist(spe.norm, 'hel') ## psk bcp 0
-
-# Compute and plot complete-linkage agglomerative clustering
-
-spe.hel.complete <- hclust(spe.hel, method = "complete")
-plot(spe.hel.complete, main = "Chord - Complete linkage")
-spe.hel.complete
-
-# Compute UPGMA clustering
-spe.hel.UPGMA <- hclust(spe.hel, method = "average")
-plot(spe.hel.UPGMA, main = "Chord - UPGMA")
-
-
-# Compute UPGMC clustering
-spe.hel.centroid <- hclust(spe.hel, method = "centroid")
-plot(spe.hel.centroid, main = "Chord - Centroid")
-
-
-# Compute Ward's minimum variance clustering
-spe.hel.ward <- hclust(spe.hel, method = "ward.D2")
-plot(spe.hel.ward,  main = "Chord - Ward")
-
-
-#k-means clustering
-spe.hel.k<-  kmeans(spe.hel, centers=5)
-spe.hel.k
-
-
-# Cophenetic correlations -------------------------------------------------
-# Single linkage clustering
-spe.hel.single.coph <- cophenetic(spe.hel.single)
-cor(spe.hel, spe.hel.single.coph)
-
-
-# Complete linkage clustering
-spe.hel.comp.coph <- cophenetic(spe.hel.complete)
-cor(spe.hel, spe.hel.comp.coph)
-
-
-# Average clustering
-spe.hel.UPGMA.coph <- cophenetic(spe.hel.UPGMA)
-cor(spe.hel, spe.hel.UPGMA.coph)
-
-
-# Ward clustering
-spe.hel.ward.coph <- cophenetic(spe.hel.ward)
-cor(spe.hel, spe.hel.ward.coph)
+  ## Hierarchical agglomerative clustering of the species abundance 
+        
+        # Compute Helinger distance
+        spe.norm <- decostand(spe[,2:58], "normalize")
+        spe.hel <- vegdist(spe.norm, "hel")
+        
+        # METHOD
+          # CREATE DENDROGRAM
+          # PLOT DENDROGRAM
+          # COMPUTE COPHENETIC MATRIX
+          # COMPUTE CORRELATION
+        
+        # Single method 
+        spe.hel.single <- hclust(spe.hel, method = "single")
+        plot(spe.hel.single, main = "Helinger - Single linkage")
+        spe.hel.single.coph <- cophenetic(spe.hel.single)
+        cor(spe.hel, spe.hel.single.coph)
+        
+        # Complete method 
+        spe.hel.complete <- hclust(spe.hel, method = "complete")
+        plot(spe.hel.complete, main = "Helinger - Complete linkage")
+        spe.hel.comp.coph <- cophenetic(spe.hel.complete)
+        cor(spe.hel, spe.hel.comp.coph)
+        
+        # Average method (BEST)
+        spe.hel.UPGMA <- hclust(spe.hel, method = "average")
+        plot(spe.hel.UPGMA, main = "Helinger - UPGMA")
+        spe.hel.UPGMA.coph <- cophenetic(spe.hel.UPGMA)
+        cor(spe.hel, spe.hel.UPGMA.coph)
+        
+        # Centroid method
+        spe.hel.centroid <- hclust(spe.hel, method = "centroid")
+        plot(spe.hel.centroid, main = "Helinger - Centroid")
+        spe.hel.centroid.coph <- cophenetic(spe.hel.centroid)
+        cor(spe.hel, spe.hel.centroid.coph)
+        
+        # Ward method
+        spe.hel.ward <- hclust(spe.hel, method = "ward.D2")
+        plot(spe.hel.ward,  main = "Helinger - Ward")
+        spe.hel.ward.coph <- cophenetic(spe.hel.ward)
+        cor(spe.hel, spe.hel.ward.coph)
+        
+        
 
 library(NbClust)
 
@@ -150,8 +132,9 @@ Nb.complete <-NbClust(spe[,2:58], diss=spe.hel, distance = NULL, min.nc=1, max.n
 Nb.complete
 plot(Nb.complete$All.index, xlab="number of clusters", ylab="Calinski and Harabasz index")
 
-single.dend <- as.dendrogram(spe.hel.complete)
-plot(single.dend)
+UPGMA.dend <- as.dendrogram(spe.hel.UPGMA)
+plot(UPGMA.dend)
+
 #Unconstrained ordination
     #CA
       
