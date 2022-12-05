@@ -20,125 +20,148 @@ PATH_ENV = "../Data/env.csv"
 # Load & Clean data ---------------------------------------------------------------
   # ENV
     env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
-    env <- env[2205:2214]   # Keep only environmental parameters
+    env <- env[2205:2214]                                                                         # Keep only environmental parameters
     env$sediment <- as.factor(env$sediment)
-    env 
-  
+    colnames(env) <- c("lat", "long", "depth", "sed" , "disO2" , "P", "N", "T", "sal" , "sil")    # Rename ENV variables
+
   # SPE
     spe <- read.csv(PATH_SPE, sep = ',', row.names = NULL)
-    name_species <- spe[,2:11]
-    
-    spe <- spe[spe$Class != '',]
+    name_species <- spe[,2:11]                                                                    # Save nomenclatures of all species
+
+    spe <- spe[spe$Class != '',]                                                                  # Keep only species with specified class
     spe$Class <- as.factor(spe$Class)
-    
-    spe <- aggregate(spe[,-(0:11)], by = list(spe$Class), FUN = "sum")
-    site_names <- colnames(spe[,-1], prefix = "")
-    colnames(spe) <- append(1:56, c("Class","Tot"), 0)
+
+    cla <- aggregate(spe[,-(0:12)], by = list(spe$Class), FUN = "sum")                            # Define CLA as SPE without nomenclature
+
+    rownames(cla) <- cla[,1]
+    cla <-  cla[,-1]
+    colnames(cla) <- 1:56
+    cla <-  t(cla)
+
+  # remove "empty" sites from CLA and ENV
+    # total presence
+      sites.pres <- apply(cla> 0, 1, sum)
+
+    # remove empty sites
+      index = sites.pres > 0
+      cla <- cla[index,]
+      env <- env[index,]
 
 # Data exploration SPE  ---------------------------------------------------------------
-    
+
     # Summary
-      summary(spe)
-      str(spe)
-  
+      summary(cla)
+      str(cla)
+
+    # relative presence of each classes
+
+        # total presence for each classes
+          cla.pres <- apply(cla> 0, 2, sum)
+          sites.pres <- apply(cla> 0, 1, sum)
+
     # Proportion of zeros in the community data set
-      sum(spe == 0) / (nrow(spe) * ncol(spe))
-      
-    # relative presence of each species
-            
-        # total presence for each species
-          spe.pres <- apply(spe[, 2:58]> 0, 1, sum)
-          sites.pres <- apply(spe[, 2:58]> 0, 2, sum)
+        sum(cla == 0) / (nrow(cla) * ncol(cla))
+
+    # Plot barplots
         # Sort the results in increasing order
-          sort(spe.pres)
-        
-        # Plot histograms
-        barplot(sites.pres[-(1)], 
+        sort(cla.pres)
+
+
+        barplot(sites.pres,
                las = 1,
                xlab = "Sites",
-               ylab = "Species richness",
+               ylab = "sites richness",
                col = gray(5 : 0 / 5),
                horiz=F,
        )
-        
+
+        barplot(cla.pres,
+                las = 1,
+                xlab = "Sites",
+                ylab = "classies richness",
+                col = gray(5 : 0 / 5),
+                horiz=F,
+        )
+
 # Data exploration ENV  ---------------------------------------------------------------
-        # Summary 
+        # Summary
         summary(env)
-        str(env) # asfactor pour N/Y sediment ?  
-        
+        str(env) # asfactor pour N/Y sediment ?
+
         # Map sites (TODO : Improve)
         coo = env[,(1:2)]
         map <- ggplot(world_map, aes(x = long, y = lat, group = group))  +
           geom_path()+
           scale_y_continuous(breaks = (-2:2) * 30) +
           scale_x_continuous(breaks = (-4:4) * 45) +
-          geom_point(data = coo, aes(x=Longitude..degrees., y=Latitide..degrees., size = sites.pres[-1],colour = "red"), inherit.aes = FALSE) +
+          geom_point(data = coo, aes(x=long, y=lat, size = sites.pres,colour = "red"), inherit.aes = FALSE) +
           xlab("° Longitude") + ylab("° Latitude") +
           labs(colour ='Sites of study',size = "Number of occurrences of classes" , title = "Location of sites")
-        map 
-        
-         
+        map
 
-#Supervised classification
-  ## Hierarchical agglomerative clustering of the species abundance 
-        
+
+
+#Unsupervised classification -----------------------------------------------------------------------------------------------------------
+  ## Hierarchical agglomerative clustering of the classes abundance
+
         # Compute Helinger distance
-        spe.norm <- decostand(spe[,2:58], "normalize")
-        spe.hel <- vegdist(spe.norm, "hel")
-        
+        cla <-  t(cla)
+        cla.norm <- decostand(cla, "normalize")
+        cla.hel <- vegdist(cla.norm, "hel")
+
         # METHOD
           # CREATE DENDROGRAM
           # PLOT DENDROGRAM
           # COMPUTE COPHENETIC MATRIX
           # COMPUTE CORRELATION
-        
-        # Single method 
-        spe.hel.single <- hclust(spe.hel, method = "single")
-        plot(spe.hel.single, main = "Helinger - Single linkage")
-        spe.hel.single.coph <- cophenetic(spe.hel.single)
-        cor(spe.hel, spe.hel.single.coph)
-        
-        # Complete method 
-        spe.hel.complete <- hclust(spe.hel, method = "complete")
-        plot(spe.hel.complete, main = "Helinger - Complete linkage")
-        spe.hel.comp.coph <- cophenetic(spe.hel.complete)
-        cor(spe.hel, spe.hel.comp.coph)
-        
+
+        # Single method
+        cla.hel.single <- hclust(cla.hel, method = "single")
+        plot(cla.hel.single, main = "Helinger - Single linkage")
+        cla.hel.single.coph <- cophenetic(cla.hel.single)
+        cor(cla.hel, cla.hel.single.coph)
+
+        # Complete method
+        cla.hel.complete <- hclust(cla.hel, method = "complete")
+        plot(cla.hel.complete, main = "Helinger - Complete linkage")
+        cla.hel.comp.coph <- cophenetic(cla.hel.complete)
+        cor(cla.hel, cla.hel.comp.coph)
+
         # Average method (BEST)
-        spe.hel.UPGMA <- hclust(spe.hel, method = "average")
-        plot(spe.hel.UPGMA, main = "Helinger - UPGMA")
-        spe.hel.UPGMA.coph <- cophenetic(spe.hel.UPGMA)
-        cor(spe.hel, spe.hel.UPGMA.coph)
-        
+        cla.hel.UPGMA <- hclust(cla.hel, method = "average")
+        plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
+        cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
+        cor(cla.hel, cla.hel.UPGMA.coph)
+
         # Centroid method
-        spe.hel.centroid <- hclust(spe.hel, method = "centroid")
-        plot(spe.hel.centroid, main = "Helinger - Centroid")
-        spe.hel.centroid.coph <- cophenetic(spe.hel.centroid)
-        cor(spe.hel, spe.hel.centroid.coph)
-        
+        cla.hel.centroid <- hclust(cla.hel, method = "centroid")
+        plot(cla.hel.centroid, main = "Helinger - Centroid")
+        cla.hel.centroid.coph <- cophenetic(cla.hel.centroid)
+        cor(cla.hel, cla.hel.centroid.coph)
+
         # Ward method
-        spe.hel.ward <- hclust(spe.hel, method = "ward.D2")
-        plot(spe.hel.ward,  main = "Helinger - Ward")
-        spe.hel.ward.coph <- cophenetic(spe.hel.ward)
-        cor(spe.hel, spe.hel.ward.coph)
-        
-        
+        cla.hel.ward <- hclust(cla.hel, method = "ward.D2")
+        plot(cla.hel.ward,  main = "Helinger - Ward")
+        cla.hel.ward.coph <- cophenetic(cla.hel.ward)
+        cor(cla.hel, cla.hel.ward.coph)
+
+
 
 library(NbClust)
 
 
-Nb.complete <-NbClust(spe[,2:58], diss=spe.hel, distance = NULL, min.nc=1, max.nc=16, 
+Nb.complete <-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=1, max.nc=16,
                    method = "average", index = "ch")
 
 Nb.complete
 plot(Nb.complete$All.index, xlab="number of clusters", ylab="Calinski and Harabasz index")
 
-UPGMA.dend <- as.dendrogram(spe.hel.UPGMA)
+UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
 plot(UPGMA.dend)
 
 library(dendextend)
 
-Nb.UPGMA<-NbClust(spe[,2:58], diss=spe.hel, distance = NULL, min.nc=2, max.nc=16, 
+Nb.UPGMA<-NbClust(spe[,2:58], diss=spe.hel, distance = NULL, min.nc=2, max.nc=16,
                   method = "average", index="ch")
 Nb.UPGMA
 plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
@@ -177,8 +200,35 @@ lines(lowess(cla.hel, cla.hel.ward.coph), col = "red", lwd=3)
 
 #Unconstrained ordination
     #CA
-      
-#Constrained ordination 
+
+cla <-t(cla)
+cla.ca <- cca(cla)
+summary(cla.ca)		# default scaling 2
+summary(cla.ca, scaling = 1)
+
+# Scree plot and broken stick model using vegan's screeplot.cca()
+screeplot(cla.ca, bstick = TRUE, npcs = length(cla.ca$CA$eig))
+
+# CA biplots
+par(mfrow = c(1, 2))
+# Scaling 1: sites are centroids of classes
+plot(cla.ca,
+     scaling = 1,
+     main = "CA fungi abundances - biplot scaling 1"
+)
+# Scaling 2 (default): classes are centroids of sites
+plot(cla.ca, main = "CA fungi abundances - biplot scaling 2")
+
+
+# Curve fitting in a CA biplot
+plot(cla.ca, main = "CA fungi abundances - scaling 2",
+     sub = "Fitted curves: discharge (red), ammonium (green)")
+cla.ca.env <- envfit(cla.ca ~ long+ lat + depth + T + P + N + sal + sil + disO2 , env)
+plot(cla.ca.env)  # Two arrows·
+
+#ordisurf(cla.ca, env$sal, add = TRUE)
+#ordisurf(cla.ca, env$sil, add = TRUE, col = "green")
+
+
+#Constrained ordination ------------------------------------------------------------------------------------------------------------
     # CCA
-        
-            
