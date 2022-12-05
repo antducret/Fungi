@@ -233,6 +233,7 @@ plot(cla.ca.env)  # Two arrows·
 #Colorer names in dendro
 #Reduce names in CA
 #check best methods AND UNDERSTAND THEM 
+# Normalize env.var
 
 #Constrained ordination ------------------------------------------------------------------------------------------------------------
     # CCA
