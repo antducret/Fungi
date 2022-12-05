@@ -161,13 +161,13 @@ plot(UPGMA.dend)
 
 library(dendextend)
 
-Nb.UPGMA<-NbClust(spe[,2:58], diss=spe.hel, distance = NULL, min.nc=2, max.nc=16,
+Nb.UPGMA<-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=2, max.nc=16,
                   method = "average", index="ch")
 Nb.UPGMA
 plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
 
 #convert to dendrogram
-UPGMA.dend <- as.dendrogram(spe.hel.UPGMA)
+UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
 
 
 #define colors and sort according to tips in dendrogram
@@ -183,20 +183,20 @@ plot(UPGMA.dend)
 
 #change color of branches
 labels_colors(UPGMA.dend)<-1
-UPGMA.dend <- UPGMA.dend %>% color_branches(k = 5)
+UPGMA.dend <- UPGMA.dend %>% color_branches(k = 10)
 plot(UPGMA.dend)
 
 cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
 cor(cla.hel, cla.hel.UPGMA.coph)
 
-plot(cla.hel, cla.hel.ward.coph,
+plot(cla.hel, cla.hel.UPGMA.coph,
      xlab = "Chord distance",
      ylab = "Cophenetic distance",
      asp = 1, xlim = c(0, sqrt(2)),
      ylim = c(0, sqrt(2)),
-     main = c("Single linkage", paste("Cophenetic correlation =", round(cor(cla.hel, cla.hel.ward.coph), 3))))
+     main = c("Single linkage", paste("Cophenetic correlation =", round(cor(cla.hel, cla.hel.UPGMA.coph), 2))))
 abline(0, 1)
-lines(lowess(cla.hel, cla.hel.ward.coph), col = "red", lwd=3)
+lines(lowess(cla.hel, cla.hel.UPGMA.coph), col = "red", lwd=3)
 
 #Unconstrained ordination
     #CA
@@ -229,6 +229,10 @@ plot(cla.ca.env)  # Two arrows·
 #ordisurf(cla.ca, env$sal, add = TRUE)
 #ordisurf(cla.ca, env$sil, add = TRUE, col = "green")
 
+#Colorer sites names in CA
+#Colorer names in dendro
+#Reduce names in CA
+#check best methods AND UNDERSTAND THEM 
 
 #Constrained ordination ------------------------------------------------------------------------------------------------------------
     # CCA
