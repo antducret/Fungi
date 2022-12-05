@@ -3,9 +3,10 @@
 
 # Set directory ?
 # Librairies ?
-#setwd(dir = "/home/filsdufrere/Documents/Multivariate Statistics in R/datasets_fungi/Fungi/Projet_Rstudio")
-setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
+setwd(dir = "/home/filsdufrere/Documents/Multivariate Statistics in R/datasets_fungi/Fungi/Projet_Rstudio")
+#setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
 library(tidyverse)
+library(vegan)
 
 world_map = map_data("world")
 
@@ -16,7 +17,7 @@ PATH_SPE_BENTHIC = "../Data/occurence_benthic.csv"
 PATH_SPE_PELAGIC = "../Data/occurence_pelagic.csv"
 PATH_ENV = "../Data/env.csv"
 
-# Load data ---------------------------------------------------------------
+# Load & Clean data ---------------------------------------------------------------
   # ENV
     env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
     env <- env[2205:2214]   # Keep only environmental parameters
@@ -134,6 +135,45 @@ plot(Nb.complete$All.index, xlab="number of clusters", ylab="Calinski and Haraba
 
 UPGMA.dend <- as.dendrogram(spe.hel.UPGMA)
 plot(UPGMA.dend)
+
+library(dendextend)
+
+Nb.UPGMA<-NbClust(spe[,2:58], diss=spe.hel, distance = NULL, min.nc=2, max.nc=16, 
+                  method = "average", index="ch")
+Nb.UPGMA
+plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
+
+#convert to dendrogram
+UPGMA.dend <- as.dendrogram(spe.hel.UPGMA)
+
+
+#define colors and sort according to tips in dendrogram
+colors_to_use <- Nb.UPGMA$Best.partition
+colors_to_use<-colors_to_use[order.dendrogram(UPGMA.dend)]
+
+
+
+#change color of tips
+labels_colors(UPGMA.dend) <- colors_to_use
+plot(UPGMA.dend)
+
+
+#change color of branches
+labels_colors(UPGMA.dend)<-1
+UPGMA.dend <- UPGMA.dend %>% color_branches(k = 5)
+plot(UPGMA.dend)
+
+cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
+cor(cla.hel, cla.hel.UPGMA.coph)
+
+plot(cla.hel, cla.hel.ward.coph,
+     xlab = "Chord distance",
+     ylab = "Cophenetic distance",
+     asp = 1, xlim = c(0, sqrt(2)),
+     ylim = c(0, sqrt(2)),
+     main = c("Single linkage", paste("Cophenetic correlation =", round(cor(cla.hel, cla.hel.ward.coph), 3))))
+abline(0, 1)
+lines(lowess(cla.hel, cla.hel.ward.coph), col = "red", lwd=3)
 
 #Unconstrained ordination
     #CA
