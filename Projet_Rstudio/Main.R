@@ -1,12 +1,12 @@
-
 # PREPARE SESSION ---------------------------------------------------------
-
+ 
 # Set directory ?
 # Librairies ?
-setwd(dir = "/home/filsdufrere/Documents/Multivariate Statistics in R/datasets_fungi/Fungi/Projet_Rstudio")
+setwd(dir = "/home/filsdufrere/Documents/Fungi/Projet_Rstudio")
 #setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
+
 library(tidyverse)
-library(vegan)
+# library(vegan)
 
 world_map = map_data("world")
 
@@ -46,10 +46,11 @@ PATH_ENV = "../Data/env.csv"
       index = sites.pres > 0
       cla <- cla[index,]
       env <- env[index,]
+      
 
 # Data exploration SPE  ---------------------------------------------------------------
 
-    # Summary
+#Summary
       summary(cla)
       str(cla)
 
@@ -103,7 +104,7 @@ PATH_ENV = "../Data/env.csv"
 
 #Unsupervised classification -----------------------------------------------------------------------------------------------------------
   ## Hierarchical agglomerative clustering of the classes abundance
-
+        library(vegan)
         # Compute Helinger distance
         cla <-  t(cla)
         cla.norm <- decostand(cla, "normalize")
@@ -148,42 +149,38 @@ PATH_ENV = "../Data/env.csv"
 
 
 library(NbClust)
+par(mfrow = c(1, 1))
+library(dendextend)
 
+Nb.UPGMA<-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=1, max.nc=16,
+                  method = "average", index="ch")
+Nb.UPGMA
 
-Nb.complete <-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=1, max.nc=16,
-                   method = "average", index = "ch")
+#plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
 
-Nb.complete
-plot(Nb.complete$All.index, xlab="number of clusters", ylab="Calinski and Harabasz index")
+#convert to dendrogram
+plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
+plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
 
 UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
 plot(UPGMA.dend)
-
-library(dendextend)
-
-Nb.UPGMA<-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=2, max.nc=16,
-                  method = "average", index="ch")
-Nb.UPGMA
-plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
-
-#convert to dendrogram
-UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
-
-
-#define colors and sort according to tips in dendrogram
+par(mfrow = c(1,1))
+#define colors and labels  and sort according to tips in dendrogram
 colors_to_use <- Nb.UPGMA$Best.partition
 colors_to_use<-colors_to_use[order.dendrogram(UPGMA.dend)]
-
+labels_to_use <- strtrim(cla.hel.UPGMA$labels, 11)
+labels_to_use <- labels_to_use[order.dendrogram(UPGMA.dend)]
 
 
 #change color of tips
 labels_colors(UPGMA.dend) <- colors_to_use
-plot(UPGMA.dend)
+labels(UPGMA.dend)<- labels_to_use
+plot(UPGMA.dend, main = "Helinger - UPGMA")
 
 
 #change color of branches
-labels_colors(UPGMA.dend)<-1
-UPGMA.dend <- UPGMA.dend %>% color_branches(k = 10)
+#labels_colors(UPGMA.dend)<-1
+UPGMA.dend <-color_branches(UPGMA.dend, col =  colors_to_use)
 plot(UPGMA.dend)
 
 cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
@@ -199,7 +196,7 @@ abline(0, 1)
 lines(lowess(cla.hel, cla.hel.UPGMA.coph), col = "red", lwd=3)
 
 #Unconstrained ordination
-    #CA
+    #CA (Correspondence analysis)
 
 cla <-t(cla)
 cla.ca <- cca(cla)
@@ -214,26 +211,42 @@ par(mfrow = c(1, 2))
 # Scaling 1: sites are centroids of classes
 plot(cla.ca,
      scaling = 1,
-     main = "CA fungi abundances - biplot scaling 1"
+     main = "CA fungi abundances - biplot scaling 1",
+     col= as.numeric(env$sed)
 )
 # Scaling 2 (default): classes are centroids of sites
-plot(cla.ca, main = "CA fungi abundances - biplot scaling 2")
+plot(cla.ca, 
+     main = "CA fungi abundances - biplot scaling 2")
+
+par(mfrow = c(1,1))
+# Scaling 3: Compromise between both before TO COMMENT
+plot(cla.ca, 
+     scaling = 3,
+     main = "CA fungi abundances - biplot scaling 3"
+)
 
 
 # Curve fitting in a CA biplot
-plot(cla.ca, main = "CA fungi abundances - scaling 2",
-     sub = "Fitted curves: discharge (red), ammonium (green)")
+par(mfrow = c(1,2))
+plot(cla.ca, scaling = 3,main = "CA fungi abundances - scaling 3",
+     sub = "Fitted curves: discharge (red), ammonium (green)",
+     col =c("red","blue")[env$sed])
+cla <- t(cla)
 cla.ca.env <- envfit(cla.ca ~ long+ lat + depth + T + P + N + sal + sil + disO2 , env)
 plot(cla.ca.env)  # Two arrows·
+library(factoextra)
+library("FactoMineR")
+cla.ca2 <- CA(cla, graph = FALSE)
+col<- get_ca_col(cla.ca2)
+fviz_ca_biplot(cla.ca2, repel = TRUE, col.col = env$sed )
+fviz_add(cla.ca.env)
+
 
 #ordisurf(cla.ca, env$sal, add = TRUE)
 #ordisurf(cla.ca, env$sil, add = TRUE, col = "green")
 
-#Colorer sites names in CA
-#Colorer names in dendro
-#Reduce names in CA
-#check best methods AND UNDERSTAND THEM 
-# Normalize env.var
+#check best methods AND UNDERSTAND THEM
+#Normalize env.var
 
 #Constrained ordination ------------------------------------------------------------------------------------------------------------
     # CCA
