@@ -2,8 +2,8 @@
  
 # Set directory ?
 # Librairies ?
-setwd(dir = "/home/filsdufrere/Documents/Fungi/Projet_Rstudio")
-#setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
+#setwd(dir = "/home/filsdufrere/Documents/Fungi/Projet_Rstudio")
+setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
 
 library(tidyverse)
 # library(vegan)
@@ -47,7 +47,10 @@ PATH_ENV = "../Data/env.csv"
       cla <- cla[index,]
       env <- env[index,]
       
-
+# Remove duplicate sites and sums corresponding classes
+      
+      
+      
 # Data exploration SPE  ---------------------------------------------------------------
 
 #Summary
@@ -72,7 +75,7 @@ PATH_ENV = "../Data/env.csv"
                las = 1,
                xlab = "Sites",
                ylab = "sites richness",
-               col = gray(5 : 0 / 5),
+               col = gray(1 : 0 / 1),
                horiz=F,
        )
 
@@ -110,72 +113,35 @@ PATH_ENV = "../Data/env.csv"
         cla.norm <- decostand(cla, "normalize")
         cla.hel <- vegdist(cla.norm, "hel")
 
-        # METHOD
-          # CREATE DENDROGRAM
-          # PLOT DENDROGRAM
-          # COMPUTE COPHENETIC MATRIX
-          # COMPUTE CORRELATION
 
-        # Single method
-        cla.hel.single <- hclust(cla.hel, method = "single")
-        plot(cla.hel.single, main = "Helinger - Single linkage")
-        cla.hel.single.coph <- cophenetic(cla.hel.single)
-        cor(cla.hel, cla.hel.single.coph)
-
-        # Complete method
-        cla.hel.complete <- hclust(cla.hel, method = "complete")
-        plot(cla.hel.complete, main = "Helinger - Complete linkage")
-        cla.hel.comp.coph <- cophenetic(cla.hel.complete)
-        cor(cla.hel, cla.hel.comp.coph)
-
-        # Average method (BEST)
-        cla.hel.UPGMA <- hclust(cla.hel, method = "average")
-        plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
-        cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
-        cor(cla.hel, cla.hel.UPGMA.coph)
-
-        # Centroid method
-        cla.hel.centroid <- hclust(cla.hel, method = "centroid")
-        plot(cla.hel.centroid, main = "Helinger - Centroid")
-        cla.hel.centroid.coph <- cophenetic(cla.hel.centroid)
-        cor(cla.hel, cla.hel.centroid.coph)
-
-        # Ward method
-        cla.hel.ward <- hclust(cla.hel, method = "ward.D2")
-        plot(cla.hel.ward,  main = "Helinger - Ward")
-        cla.hel.ward.coph <- cophenetic(cla.hel.ward)
-        cor(cla.hel, cla.hel.ward.coph)
-
-
-
-library(NbClust)
-par(mfrow = c(1, 1))
-library(dendextend)
-
-Nb.UPGMA<-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=1, max.nc=16,
-                  method = "average", index="ch")
-Nb.UPGMA
-
-#plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
-
-#convert to dendrogram
-plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
-plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
-
-UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
-plot(UPGMA.dend)
-par(mfrow = c(1,1))
-#define colors and labels  and sort according to tips in dendrogram
-colors_to_use <- Nb.UPGMA$Best.partition
-colors_to_use<-colors_to_use[order.dendrogram(UPGMA.dend)]
-labels_to_use <- strtrim(cla.hel.UPGMA$labels, 11)
-labels_to_use <- labels_to_use[order.dendrogram(UPGMA.dend)]
-
-
-#change color of tips
-labels_colors(UPGMA.dend) <- colors_to_use
-labels(UPGMA.dend)<- labels_to_use
-plot(UPGMA.dend, main = "Helinger - UPGMA")
+  library(NbClust)
+  par(mfrow = c(1, 1))
+  library(dendextend)
+  
+  Nb.UPGMA<-NbClust(cla, diss=cla.hel, distance = NULL, min.nc=1, max.nc=16,
+                    method = "average", index="ch")
+  Nb.UPGMA
+  
+  #plot(Nb.UPGMA$All.index, xlab ="number of clusters", ylab = "Calinski and Harabs index")
+  
+  #convert to dendrogram
+  plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
+  plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
+  
+  UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
+  plot(UPGMA.dend)
+  par(mfrow = c(1,1))
+  #define colors and labels  and sort according to tips in dendrogram
+  colors_to_use <- Nb.UPGMA$Best.partition
+  colors_to_use<-colors_to_use[order.dendrogram(UPGMA.dend)]
+  labels_to_use <- strtrim(cla.hel.UPGMA$labels, 11)
+  labels_to_use <- labels_to_use[order.dendrogram(UPGMA.dend)]
+  
+  
+  #change color of tips
+  labels_colors(UPGMA.dend) <- colors_to_use
+  labels(UPGMA.dend)<- labels_to_use
+  plot(UPGMA.dend, main = "Helinger - UPGMA")
 
 
 #change color of branches
@@ -194,6 +160,11 @@ plot(cla.hel, cla.hel.UPGMA.coph,
      main = c("Single linkage", paste("Cophenetic correlation =", round(cor(cla.hel, cla.hel.UPGMA.coph), 2))))
 abline(0, 1)
 lines(lowess(cla.hel, cla.hel.UPGMA.coph), col = "red", lwd=3)
+
+
+
+
+
 
 #Unconstrained ordination
     #CA (Correspondence analysis)
