@@ -48,8 +48,18 @@ PATH_ENV = "../Data/env.csv"
       env <- env[index,]
       
 # Remove duplicate sites and sums corresponding classes
-      
-      
+
+    env = env[-c(10,35,39,52,53),]   
+    cla[9,] = cla[9,]+cla[10,]
+    cla[34,]= cla[34,]+cla[35,]
+    cla[38,]= cla[38,] + cla[39,]
+    cla[51,]= cla[51,] + cla[52,] + cla[53,]
+    
+    cla = cla[-c(10,35,39,52,53),]
+    
+# Reduce size of class name 
+    
+    colnames(cla) = c("Agarico.","Agaricostilbo.","Chytridio.","Dothideo.","Eurotio.","Glomero.","Lecanoro.","Leotio.","Microbotryo.","Monoblepharido.","Ochroconis","Pezizo.","Saccharo.","Sordario.","Taphrino.","Ustilagino.","Zygo.")
       
 # Data exploration SPE  ---------------------------------------------------------------
 
@@ -70,23 +80,6 @@ PATH_ENV = "../Data/env.csv"
         # Sort the results in increasing order
         sort(cla.pres)
 
-
-        barplot(sites.pres,
-               las = 1,
-               xlab = "Sites",
-               ylab = "sites richness",
-               col = gray(1 : 0 / 1),
-               horiz=F,
-       )
-
-        barplot(cla.pres,
-                las = 1,
-                xlab = "Sites",
-                ylab = "classies richness",
-                col = gray(5 : 0 / 5),
-                horiz=F,
-        )
-
 # Data exploration ENV  ---------------------------------------------------------------
         # Summary
         summary(env)
@@ -100,7 +93,7 @@ PATH_ENV = "../Data/env.csv"
           scale_x_continuous(breaks = (-4:4) * 45) +
           geom_point(data = coo, aes(x=long, y=lat, size = sites.pres,colour = "red"), inherit.aes = FALSE) +
           xlab("° Longitude") + ylab("° Latitude") +
-          labs(colour ='Sites of study',size = "Number of occurrences of classes" , title = "Location of sites")
+          labs(colour ='Sites of study',size = "Number of different present classes" , title = "Location of sites")
         map
 
 
@@ -112,6 +105,13 @@ PATH_ENV = "../Data/env.csv"
         cla <-  t(cla)
         cla.norm <- decostand(cla, "normalize")
         cla.hel <- vegdist(cla.norm, "hel")
+  
+        # Average method (BEST)
+        
+            cla.hel.UPGMA <- hclust(cla.hel, method = "average")
+            plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
+            cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
+            cor(cla.hel, cla.hel.UPGMA.coph)
 
 
   library(NbClust)
@@ -126,14 +126,14 @@ PATH_ENV = "../Data/env.csv"
   
   #convert to dendrogram
   plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
-  plot(cla.hel.UPGMA, main = "Helinger - UPGMA")
-  
+
   UPGMA.dend <- as.dendrogram(cla.hel.UPGMA)
   plot(UPGMA.dend)
   par(mfrow = c(1,1))
   #define colors and labels  and sort according to tips in dendrogram
   colors_to_use <- Nb.UPGMA$Best.partition
   colors_to_use<-colors_to_use[order.dendrogram(UPGMA.dend)]
+  colors_to_use[colors_to_use!= 8] = seq(1,7)
   labels_to_use <- strtrim(cla.hel.UPGMA$labels, 11)
   labels_to_use <- labels_to_use[order.dendrogram(UPGMA.dend)]
   
@@ -153,41 +153,30 @@ cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
 cor(cla.hel, cla.hel.UPGMA.coph)
 
 plot(cla.hel, cla.hel.UPGMA.coph,
-     xlab = "Chord distance",
+     xlab = "Hellinger distance",
      ylab = "Cophenetic distance",
      asp = 1, xlim = c(0, sqrt(2)),
      ylim = c(0, sqrt(2)),
-     main = c("Single linkage", paste("Cophenetic correlation =", round(cor(cla.hel, cla.hel.UPGMA.coph), 2))))
+     main = c("Average linkage", paste("Cophenetic correlation =", round(cor(cla.hel, cla.hel.UPGMA.coph), 2))))
 abline(0, 1)
 lines(lowess(cla.hel, cla.hel.UPGMA.coph), col = "red", lwd=3)
 
+#CA (Correspondence analysis)
+library(factoextra)
+library("FactoMineR")
+cla.ca2 <- CA(cla, graph = FALSE)
+col<- get_ca_col(cla.ca2)
+fviz_ca_biplot(cla.ca2, repel = TRUE, col.col = env$sed )
 
-
-
-
-
-#Unconstrained ordination
-    #CA (Correspondence analysis)
-
-cla <-t(cla)
-cla.ca <- cca(cla)
+#Constrained ordination ------------------------------------------------------------------------------------------------------------
+## CCA of untransformed fish species data, constrained by all environmental variables (env3)
+cla = t(cla)
+cla.ca <- cca(cla, env)
 summary(cla.ca)		# default scaling 2
 summary(cla.ca, scaling = 1)
 
 # Scree plot and broken stick model using vegan's screeplot.cca()
 screeplot(cla.ca, bstick = TRUE, npcs = length(cla.ca$CA$eig))
-
-# CA biplots
-par(mfrow = c(1, 2))
-# Scaling 1: sites are centroids of classes
-plot(cla.ca,
-     scaling = 1,
-     main = "CA fungi abundances - biplot scaling 1",
-     col= as.numeric(env$sed)
-)
-# Scaling 2 (default): classes are centroids of sites
-plot(cla.ca, 
-     main = "CA fungi abundances - biplot scaling 2")
 
 par(mfrow = c(1,1))
 # Scaling 3: Compromise between both before TO COMMENT
@@ -197,27 +186,5 @@ plot(cla.ca,
 )
 
 
-# Curve fitting in a CA biplot
-par(mfrow = c(1,2))
-plot(cla.ca, scaling = 3,main = "CA fungi abundances - scaling 3",
-     sub = "Fitted curves: discharge (red), ammonium (green)",
-     col =c("red","blue")[env$sed])
-cla <- t(cla)
-cla.ca.env <- envfit(cla.ca ~ long+ lat + depth + T + P + N + sal + sil + disO2 , env)
-plot(cla.ca.env)  # Two arrows·
-library(factoextra)
-library("FactoMineR")
-cla.ca2 <- CA(cla, graph = FALSE)
-col<- get_ca_col(cla.ca2)
-fviz_ca_biplot(cla.ca2, repel = TRUE, col.col = env$sed )
-fviz_add(cla.ca.env)
-
-
 #ordisurf(cla.ca, env$sal, add = TRUE)
 #ordisurf(cla.ca, env$sil, add = TRUE, col = "green")
-
-#check best methods AND UNDERSTAND THEM
-#Normalize env.var
-
-#Constrained ordination ------------------------------------------------------------------------------------------------------------
-    # CCA
