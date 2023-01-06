@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
 # PREPARE SESSION ---------------------------------------------------------
- 
+
+# +
 # Set directory ?
 # Librairies ?
 #setwd(dir = "/home/filsdufrere/Documents/Fungi/Projet_Rstudio")
-setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
+#setwd("/home/anthoney/Documents/Master/MiR/Fungi/Projet_Rstudio/")
+# -
 
 library(tidyverse)
 # library(vegan)
@@ -22,7 +25,7 @@ PATH_ENV = "../Data/env.csv"
     env <- read.csv(PATH_ENV, sep = ',', skip = 1 )
     env <- env[2205:2214]                                                                         # Keep only environmental parameters
     env$sediment <- as.factor(env$sediment)
-    colnames(env) <- c("lat", "long", "depth", "sed" , "disO2" , "P", "N", "T", "sal" , "sil")    # Rename ENV variables
+    colnames(env) <- c("Latitude", "Longitude", "Depth", "Sediment" , "O2" , "P04", "N03", "Temperature", "Salinity" , "SiO4")    # Rename ENV variables
 
   # SPE
     spe <- read.csv(PATH_SPE, sep = ',', row.names = NULL)
@@ -46,7 +49,7 @@ PATH_ENV = "../Data/env.csv"
       index = sites.pres > 0
       cla <- cla[index,]
       env <- env[index,]
-      
+
 # Remove duplicate sites and sums corresponding classes
 
     env = env[-c(10,35,39,52,53),]   
@@ -56,17 +59,16 @@ PATH_ENV = "../Data/env.csv"
     cla[51,]= cla[51,] + cla[52,] + cla[53,]
     
     cla = cla[-c(10,35,39,52,53),]
-    
+
 # Reduce size of class name 
-    
+
     colnames(cla) = c("Agarico.","Agaricostilbo.","Chytridio.","Dothideo.","Eurotio.","Glomero.","Lecanoro.","Leotio.","Microbotryo.","Monoblepharido.","Ochroconis","Pezizo.","Saccharo.","Sordario.","Taphrino.","Ustilagino.","Zygo.")
-      
+
 # Data exploration SPE  ---------------------------------------------------------------
 
 #Summary
       summary(cla)
       str(cla)
-
     # relative presence of each classes
 
         # total presence for each classes
@@ -91,12 +93,10 @@ PATH_ENV = "../Data/env.csv"
           geom_path()+
           scale_y_continuous(breaks = (-2:2) * 30) +
           scale_x_continuous(breaks = (-4:4) * 45) +
-          geom_point(data = coo, aes(x=long, y=lat, size = sites.pres,colour = "red"), inherit.aes = FALSE) +
+          geom_point(data = coo, aes(x=Longitude, y=Latitude, size = sites.pres,colour = "red"), inherit.aes = FALSE) +
           xlab("° Longitude") + ylab("° Latitude") +
           labs(colour ='Sites of study',size = "Number of different present classes" , title = "Location of sites")
         map
-
-
 
 #Unsupervised classification -----------------------------------------------------------------------------------------------------------
   ## Hierarchical agglomerative clustering of the classes abundance
@@ -141,13 +141,9 @@ PATH_ENV = "../Data/env.csv"
   #change color of tips
   labels_colors(UPGMA.dend) <- colors_to_use
   labels(UPGMA.dend)<- labels_to_use
+  UPGMA.dend <-color_branches(UPGMA.dend, col =  colors_to_use)
   plot(UPGMA.dend, main = "Helinger - UPGMA")
 
-
-#change color of branches
-#labels_colors(UPGMA.dend)<-1
-UPGMA.dend <-color_branches(UPGMA.dend, col =  colors_to_use)
-plot(UPGMA.dend)
 
 cla.hel.UPGMA.coph <- cophenetic(cla.hel.UPGMA)
 cor(cla.hel, cla.hel.UPGMA.coph)
@@ -161,12 +157,23 @@ plot(cla.hel, cla.hel.UPGMA.coph,
 abline(0, 1)
 lines(lowess(cla.hel, cla.hel.UPGMA.coph), col = "red", lwd=3)
 
+?fviz_ca_biplot
+
+columns
+
 #CA (Correspondence analysis)
 library(factoextra)
 library("FactoMineR")
 cla.ca2 <- CA(cla, graph = FALSE)
-col<- get_ca_col(cla.ca2)
-fviz_ca_biplot(cla.ca2, repel = TRUE, col.col = env$sed )
+columns <- get_ca_col(cla.ca2)
+p1 <- fviz_ca_biplot(cla.ca2, repel = TRUE, col.col = env$Sediment, label = 'row') +
+scale_color_manual(name = "Sites", labels = c("Pelagic","Benthic"),values= c('orange','green'))
+jpeg("CA_plot.jpg")
+print(p1)
+dev.off()
+p1
+
+?fviz_ca_biplot
 
 #Constrained ordination ------------------------------------------------------------------------------------------------------------
 ## CCA of untransformed fish species data, constrained by all environmental variables (env3)
@@ -176,7 +183,7 @@ summary(cla.ca)		# default scaling 2
 summary(cla.ca, scaling = 1)
 
 # Scree plot and broken stick model using vegan's screeplot.cca()
-screeplot(cla.ca, bstick = TRUE, npcs = length(cla.ca$CA$eig))
+screeplot(cla.ca, npcs = length(cla.ca$CA$eig))
 
 par(mfrow = c(1,1))
 # Scaling 3: Compromise between both before TO COMMENT
@@ -186,5 +193,5 @@ plot(cla.ca,
 )
 
 
-#ordisurf(cla.ca, env$sal, add = TRUE)
-#ordisurf(cla.ca, env$sil, add = TRUE, col = "green")
+# ordisurf(cla.ca, env$sal, add = TRUE)
+# ordisurf(cla.ca, env$sil, add = TRUE, col = "green")
